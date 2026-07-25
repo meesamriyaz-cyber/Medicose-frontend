@@ -3,6 +3,7 @@ import { useCartStore } from "../hooks/useCartStore";
 import { MoveRight } from "lucide-react";
 import formatCurrency from "../lib/formatCurrency";
 import { Link, useNavigate } from "react-router-dom";
+import { isLocalMode } from "../config/appMode";
 
 const OrderSummary = () => {
   const { total, subtotal, coupon, isCouponApplied, cart, isDirectDiscountApplied, directDiscountPercentage } = useCartStore();
@@ -15,7 +16,11 @@ const OrderSummary = () => {
 
   const handleProceed = () => {
     if (!cart || cart.length === 0) return;
-    navigate("/sale-review");
+    if (isLocalMode) {
+      navigate("/sale-review");
+    } else {
+      navigate("/checkout");
+    }
   };
 
   return (
@@ -128,7 +133,7 @@ const OrderSummary = () => {
           whileTap={{ scale: 0.98 }}
           onClick={handleProceed}
         >
-          Proceed with Sale
+          {isLocalMode ? "Proceed with Sale" : "Proceed to Checkout"}
         </motion.button>
 
         <div className="flex items-center justify-center gap-2 pt-2">

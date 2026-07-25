@@ -30,6 +30,8 @@ import MyPrescriptions from "./pages/MyPrescriptions";
 import AdminPrescriptions from "./pages/AdminPrescriptions";
 import SaleReview from "./pages/SaleReview";
 import SaleComplete from "./pages/SaleComplete";
+import Checkout from "./pages/Checkout";
+import { APP_MODE, isLocalMode, isCustomerMode } from "./config/appMode";
 
 function App() {
   const { isAuthenticated, user, checkingAuth, checkAuth } = useAuthStore();
@@ -75,7 +77,7 @@ function App() {
       <Routes>
         {/* ✅ Public Routes */}
         <Route path="/login" element={<LoginPage />} />
-        <Route path="/signup" element={<SignUpPage />} />
+        <Route path="/signup" element={isCustomerMode ? <SignUpPage /> : <Navigate to="/" replace />} />
 
         {/* ✅ Protected Routes (requires login) */}
         <Route path="/" element={<ProtectedRoute element={<AppLayout />} />}>
@@ -86,21 +88,29 @@ function App() {
           <Route path="location" element={<ChooseLocation />} />
           <Route path="dashboard" element={<AdminPage />} />
           <Route path="cart" element={<CartPage />} />
-          <Route path="/orders" element={<MyOrders />} />
-          <Route path="/prescriptions" element={<MyPrescriptions />} />
-          <Route path="/admin/prescriptions" element={<AdminPrescriptions />} />
+          {isCustomerMode && <Route path="/checkout" element={<Checkout />} />}
+
+          {/* Customer-only online order history */}
+          {isCustomerMode && <Route path="/orders" element={<MyOrders />} />}
+          {isCustomerMode && <Route path="/prescriptions" element={<MyPrescriptions />} />}
+          {isCustomerMode && <Route path="/admin/prescriptions" element={<AdminPrescriptions />} />}
+
+          {/* Local POS mode routes */}
+          {isLocalMode && <Route path="/sale-review" element={<SaleReview />} />}
+          {isLocalMode && <Route path="/sale-complete" element={<SaleComplete />} />}
+
           <Route path="/update-profile" element={<ProfileForm />} />
-          <Route path="/purchase-success" element={<PurchaseSuccessPage />} />
-          <Route path="/purchase-cancel" element={<PurchaseCancelPage />} />
-          <Route path="/sale-review" element={<SaleReview />} />
-          <Route path="/sale-complete" element={<SaleComplete />} />
+          {isCustomerMode && <Route path="/purchase-success" element={<PurchaseSuccessPage />} />}
+          {isCustomerMode && <Route path="/purchase-cancel" element={<PurchaseCancelPage />} />}
         </Route>
 
         {/* ✅ Redirect logged-in users away from login/signup */}
         {isAuthenticated && (
           <>
             <Route path="/login" element={<Navigate to={getAdminRedirect()} replace />} />
-            <Route path="/signup" element={<Navigate to={getAdminRedirect()} replace />} />
+            {isCustomerMode && (
+              <Route path="/signup" element={<Navigate to={getAdminRedirect()} replace />} />
+            )}
           </>
         )}
 

@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { Link, useNavigate } from "react-router-dom";
 import { LogIn, Mail, Lock, ArrowRight, Loader } from "lucide-react";
 import { useAuthStore } from "../hooks/useAuthStore";
+import { isCustomerMode } from "../config/appMode";
 
 const LoginPage = () => {
   const [email, setEmail] = useState("");
@@ -162,15 +163,17 @@ const LoginPage = () => {
             </button>
           </form>
 
-          <p className="mt-8 text-center text-sm text-white/80">
-            Not a member?{" "}
-            <Link
-              to="/signup"
-              className="font-medium text-emerald-400 hover:text-emerald-300 transition-colors cursor-pointer"
-            >
-              Sign up now <ArrowRight className="h-4 w-4 inline ml-1" />
-            </Link>
-          </p>
+          {isCustomerMode && (
+            <p className="mt-8 text-center text-sm text-white/80">
+              Not a member?{" "}
+              <Link
+                to="/signup"
+                className="font-medium text-emerald-400 hover:text-emerald-300 transition-colors cursor-pointer"
+              >
+                Sign up now <ArrowRight className="h-4 w-4 inline ml-1" />
+              </Link>
+            </p>
+          )}
         </div>
       </div>
     </div>

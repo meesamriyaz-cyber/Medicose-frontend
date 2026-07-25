@@ -19,6 +19,7 @@ const UserManagement = () => {
     email: "",
     role: "customer",
     password: "",
+    confirmPassword: "",
   });
 
   const fetchUsers = async () => {
@@ -39,15 +40,19 @@ const UserManagement = () => {
   }, []);
 
   const resetForm = () => {
-    setForm({ fullName: "", email: "", role: "customer", password: "" });
+    setForm({ fullName: "", email: "", role: "customer", password: "", confirmPassword: "" });
     setEditingId(null);
     setShowForm(false);
   };
 
   const handleAdd = async (e) => {
     e.preventDefault();
-    if (!form.fullName.trim() || !form.email.trim() || !form.password.trim()) {
+    if (!form.fullName.trim() || !form.email.trim() || !form.password.trim() || !form.confirmPassword.trim()) {
       toast.error("Please fill all required fields");
+      return;
+    }
+    if (form.password !== form.confirmPassword) {
+      toast.error("Passwords do not match");
       return;
     }
     setSaving(true);
@@ -57,6 +62,7 @@ const UserManagement = () => {
         email: form.email.trim(),
         role: form.role,
         password: form.password,
+        confirmPassword: form.confirmPassword,
       });
       toast.success("User created successfully");
       resetForm();
@@ -76,6 +82,7 @@ const UserManagement = () => {
       email: user.email || "",
       role: user.role || "customer",
       password: "",
+      confirmPassword: "",
     });
   };
 
@@ -92,7 +99,13 @@ const UserManagement = () => {
         role: form.role,
       };
       if (form.password.trim()) {
+        if (form.password !== form.confirmPassword) {
+          toast.error("Passwords do not match");
+          setSaving(false);
+          return;
+        }
         payload.password = form.password.trim();
+        payload.confirmPassword = form.confirmPassword.trim();
       }
       await api.put(`/admin/users/${id}`, payload);
       toast.success("User updated successfully");
@@ -219,6 +232,18 @@ const UserManagement = () => {
                     onChange={(e) => setForm({ ...form, password: e.target.value })}
                     className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-sm"
                     placeholder={editingId ? "Leave blank to keep current" : "Enter password"}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    {editingId ? "Confirm New Password" : "Confirm Password"}
+                  </label>
+                  <input
+                    type="password"
+                    value={form.confirmPassword}
+                    onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })}
+                    className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-sm"
+                    placeholder={editingId ? "Re-enter new password" : "Confirm password"}
                   />
                 </div>
               </div>

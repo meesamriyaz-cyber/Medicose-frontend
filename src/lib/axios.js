@@ -5,14 +5,50 @@ const hasNavigator = typeof navigator !== "undefined";
 /**
  * HYBRID LOGIC (simple + bulletproof):
  *
- * 1. In PRODUCTION → Always use Render URL
- * 2. In DEV → Use VITE_API_URL or localhost
- * 3. Capacitor & WebView → No special logic needed if URL is correct
+ * 1. PROD on Render → use Render URL
+ * 2. Same-origin local hosting (Express serves dist + API on same host/port)
+ * 3. Dev/LAN/Vite → use the same hostname as the frontend, port 5000 for backend
+ * 4. Explicit override via VITE_API_URL
  */
 
-const API_URL = import.meta.env.PROD
-  ? "https://haleem-medicose-backend.onrender.com/api"
-  : import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+const getBaseApiUrl = () => {
+  const explicit = import.meta.env.VITE_API_URL;
+  if (explicit) return explicit;
+
+  if (typeof window === "undefined") {
+    return "http://localhost:5000/api";
+  }
+
+  const hostname = window.location.hostname;
+
+  if (import.meta.env.PROD) {
+    if (
+      hostname === "haleem-medicose-backend.onrender.com" ||
+      hostname.endsWith(".onrender.com")
+    ) {
+      return "https://haleem-medicose-backend.onrender.com/api";
+    }
+
+    const port = window.location.port;
+    const protocol = window.location.protocol;
+    const base = `${protocol}//${hostname}${port ? `:${port}` : ""}`;
+    return `${base}/api`;
+  }
+
+  if (
+    hostname === "localhost" ||
+    hostname === "127.0.0.1" ||
+    hostname === "::1"
+  ) {
+    return "http://localhost:5000/api";
+  }
+
+  return `http://${hostname}:5000/api`;
+};
+
+const API_URL = getBaseApiUrl();
+
+export { API_URL, getBaseApiUrl };
 
 console.log("🌍 MODE:", import.meta.env.MODE);
 console.log("🔗 API:", API_URL);

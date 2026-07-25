@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useCartStore } from "../hooks/useCartStore";
 import { Gift, Tag, X, Percent } from "lucide-react";
 import { toast } from "react-hot-toast";
+import { isLocalMode } from "../config/appMode";
 
 const GiftCouponCard = () => {
   const [userInputCode, setUserInputCode] = useState("");
@@ -163,49 +164,51 @@ const GiftCouponCard = () => {
         </motion.button>
       </div>
 
-      <div
-        className="mt-4 p-4 rounded-xl"
-        style={{
-          background:
-            "linear-gradient(135deg, rgba(0, 128, 128, 0.03) 0%, rgba(0, 51, 102, 0.03) 100%)",
-          border: "1px solid rgba(0, 128, 128, 0.1)",
-        }}
-      >
-        <div className="flex items-center gap-2 mb-2">
-          <Percent className="w-4 h-4" style={{ color: "#008080" }} />
-          <label className="text-sm font-semibold" style={{ color: "#003366" }}>
-            Direct discount at sale
-          </label>
-        </div>
-        <div className="flex items-center gap-3">
-          <input
-            type="checkbox"
-            id="directDiscount"
-            checked={isDirectDiscountApplied}
-            onChange={handleDirectDiscountToggle}
-            className="h-4 w-4 rounded border-gray-300 text-[#008080] focus:ring-[#008080]"
-          />
-          <span className="text-sm" style={{ color: "#334155" }}>
-            Apply discount
-          </span>
-        </div>
-        {isDirectDiscountApplied && (
-          <div className="mt-3">
-            <input
-              type="number"
-              min="1"
-              max="100"
-              value={directPercent}
-              onChange={(e) => handleDirectPercentChange(e.target.value)}
-              className="w-full rounded-xl p-2.5 text-sm border-2 border-teal-100 focus:border-teal-400 focus:ring-2 focus:ring-teal-100 outline-none transition-all"
-              placeholder="Discount %"
-            />
-            <p className="mt-1 text-xs" style={{ color: "#64748b" }}>
-              Default is 10%. You can enter a higher value.
-            </p>
+      {isLocalMode && (
+        <div
+          className="mt-4 p-4 rounded-xl"
+          style={{
+            background:
+              "linear-gradient(135deg, rgba(0, 128, 128, 0.03) 0%, rgba(0, 51, 102, 0.03) 100%)",
+            border: "1px solid rgba(0, 128, 128, 0.1)",
+          }}
+        >
+          <div className="flex items-center gap-2 mb-2">
+            <Percent className="w-4 h-4" style={{ color: "#008080" }} />
+            <label className="text-sm font-semibold" style={{ color: "#003366" }}>
+              Direct discount at sale
+            </label>
           </div>
-        )}
-      </div>
+          <div className="flex items-center gap-3">
+            <input
+              type="checkbox"
+              id="directDiscount"
+              checked={isDirectDiscountApplied}
+              onChange={handleDirectDiscountToggle}
+              className="h-4 w-4 rounded border-gray-300 text-[#008080] focus:ring-[#008080]"
+            />
+            <span className="text-sm" style={{ color: "#334155" }}>
+              Apply discount
+            </span>
+          </div>
+          {isDirectDiscountApplied && (
+            <div className="mt-3">
+              <input
+                type="number"
+                min="1"
+                max="100"
+                value={directPercent}
+                onChange={(e) => handleDirectPercentChange(e.target.value)}
+                className="w-full rounded-xl p-2.5 text-sm border-2 border-teal-100 focus:border-teal-400 focus:ring-2 focus:ring-teal-100 outline-none transition-all"
+                placeholder="Discount %"
+              />
+              <p className="mt-1 text-xs" style={{ color: "#64748b" }}>
+                Default is 10%. You can enter a higher value.
+              </p>
+            </div>
+          )}
+        </div>
+      )}
 
       {isCouponApplied && coupon && (
         <div

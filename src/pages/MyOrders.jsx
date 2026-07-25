@@ -8,6 +8,7 @@ import {
   downloadAuthenticatedFile,
   generateInvoiceFilename,
 } from "../utils/downloadUtils";
+import { API_URL } from "../lib/axios";
 
 export default function MyOrders() {
   const [orders, setOrders] = useState([]);
@@ -28,15 +29,11 @@ export default function MyOrders() {
   const handleInvoiceDownload = async (orderId) => {
     setDownloading(orderId);
     try {
-      const apiUrl = import.meta.env.PROD
-        ? "https://haleem-medicose-backend.onrender.com/api"
-        : import.meta.env.VITE_API_URL || "http://localhost:5000/api";
-
       const filename = generateInvoiceFilename(orderId);
 
       console.log("Attempting download for order:", orderId);
       await downloadAuthenticatedFile(
-        `${apiUrl}/orders/${orderId}/invoice`,
+        `${API_URL}/orders/${orderId}/invoice`,
         filename
       );
 
@@ -80,14 +77,8 @@ export default function MyOrders() {
     })();
   }, [page, filter]);
 
-  // Direct sales store totalAmount in rupees, old Razorpay orders stored in paise
   const formatOrderTotal = (order) => {
     const amount = order.totalAmount || 0;
-    // If the order has razorpayPaymentId, it was stored in paise (old orders)
-    // If the order is a direct sale (no razorpayPaymentId), it's already in rupees
-    if (order.razorpayPaymentId) {
-      return (amount / 100).toFixed(2);
-    }
     return amount.toFixed(2);
   };
 

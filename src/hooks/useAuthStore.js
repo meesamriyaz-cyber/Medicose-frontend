@@ -1,6 +1,23 @@
 import { create } from "zustand";
 import api from "../lib/axios";
 import { toast } from "react-hot-toast";
+import { isLocalMode } from "../config/appMode";
+
+const blockedStaffRole = (user) => {
+  if (!user || !user.role) return false;
+  if (isLocalMode) return false;
+  const restrictedRoles = ["staff", "admin"];
+  return restrictedRoles.includes(user.role);
+};
+
+const handleStaffBlock = (user) => {
+  if (blockedStaffRole(user)) {
+    localStorage.removeItem("access_token");
+    toast.error("staff is not allowed to log in here");
+    return true;
+  }
+  return false;
+};
 
 export const useAuthStore = create((set, get) => ({
   user: null,
@@ -28,6 +45,13 @@ export const useAuthStore = create((set, get) => ({
       const res = await api.post("/auth/signup", formData, {
         withCredentials: true,
       });
+
+      if (blockedStaffRole(res.data.user)) {
+        localStorage.removeItem("access_token");
+        set({ loading: false });
+        toast.error("staff is not allowed to log in here");
+        return;
+      }
 
       if (res.data.accessToken) {
         localStorage.setItem("access_token", res.data.accessToken);
@@ -61,7 +85,13 @@ export const useAuthStore = create((set, get) => ({
         withCredentials: true,
       });
 
-      // For mobile / hybrid support
+      if (blockedStaffRole(res.data.user)) {
+        localStorage.removeItem("access_token");
+        set({ loading: false });
+        toast.error("staff is not allowed to log in here");
+        return;
+      }
+
       if (res.data.accessToken) {
         localStorage.setItem("access_token", res.data.accessToken);
       }
@@ -121,11 +151,16 @@ export const useAuthStore = create((set, get) => ({
     set({ checkingAuth: true });
 
     try {
-      // Try cookie-based auth first (normal site)
       const res = await api.get("/auth/getProfile", {
         withCredentials: true,
-        // Don't add Authorization header for cookie-based auth
       });
+
+      if (blockedStaffRole(res.data)) {
+        localStorage.removeItem("access_token");
+        set({ user: null, isAuthenticated: false, checkingAuth: false });
+        toast.error("staff is not allowed to log in here");
+        return;
+      }
 
       set({
         user: res.data,
@@ -134,7 +169,6 @@ export const useAuthStore = create((set, get) => ({
       });
     } catch (cookieError) {
       try {
-        // Fallback to token-based auth (mobile)
         const token = localStorage.getItem("access_token");
 
         if (!token) {
@@ -146,13 +180,19 @@ export const useAuthStore = create((set, get) => ({
           headers: { Authorization: `Bearer ${token}` },
         });
 
+        if (blockedStaffRole(tokenRes.data)) {
+          localStorage.removeItem("access_token");
+          set({ user: null, isAuthenticated: false, checkingAuth: false });
+          toast.error("staff is not allowed to log in here");
+          return;
+        }
+
         set({
           user: tokenRes.data,
           isAuthenticated: true,
           checkingAuth: false,
         });
       } catch (tokenError) {
-        // Clean up localStorage on failed auth
         localStorage.removeItem("access_token");
 
         set({
@@ -179,6 +219,19 @@ export const useAuthStore = create((set, get) => ({
 
       if (res.data?.accessToken) {
         localStorage.setItem("access_token", res.data.accessToken);
+      }
+
+      const existingUser = get().user;
+      if (blockedStaffRole(existingUser)) {
+        localStorage.removeItem("access_token");
+        set({
+          user: null,
+          isAuthenticated: false,
+          refreshing: false,
+          refreshingToken: false,
+        });
+        toast.error("staff is not allowed to log in here");
+        return null;
       }
 
       set({

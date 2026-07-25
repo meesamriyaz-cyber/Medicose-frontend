@@ -5,6 +5,7 @@ import {
   downloadAuthenticatedFile,
   generateInvoiceFilename,
 } from "../utils/downloadUtils";
+import { API_URL } from "../lib/axios";
 
 export default function Orders() {
   const [orders, setOrders] = useState([]);
@@ -24,15 +25,11 @@ export default function Orders() {
   const handleInvoiceDownload = async (orderId) => {
     setDownloading(orderId);
     try {
-      const apiUrl = import.meta.env.PROD
-        ? "https://haleem-medicose-backend.onrender.com/api"
-        : import.meta.env.VITE_API_URL || "http://localhost:5000/api";
-
       const filename = generateInvoiceFilename(orderId);
 
       console.log("Attempting admin download for order:", orderId);
       await downloadAuthenticatedFile(
-        `${apiUrl}/orders/admin/${orderId}/invoice`,
+        `${API_URL}/orders/admin/${orderId}/invoice`,
         filename
       );
 
@@ -181,7 +178,7 @@ export default function Orders() {
                   className="text-lg font-bold"
                   style={{ color: "#008080" }}
                 >
-                  ₹{(order.totalAmount / (order.razorpayPaymentId ? 100 : 1)).toFixed(2)}
+                  ₹{order.totalAmount.toFixed(2)}
                 </span>
               </div>
             </div>
@@ -318,7 +315,7 @@ export default function Orders() {
                         className="text-lg font-bold"
                         style={{ color: "#008080" }}
                       >
-                        ₹{(o.totalAmount / (o.razorpayPaymentId ? 100 : 1)).toFixed(2)}
+                        ₹{o.totalAmount.toFixed(2)}
                       </p>
                     </div>
                     <span
@@ -471,7 +468,7 @@ export default function Orders() {
                       className="px-4 sm:px-6 py-4 text-right font-bold text-base"
                       style={{ color: "#008080" }}
                     >
-                      ₹{(o.totalAmount / (o.razorpayPaymentId ? 100 : 1)).toFixed(2)}
+                      ₹{o.totalAmount.toFixed(2)}
                     </td>
                     <td className="px-4 sm:px-6 py-4 text-center">
                       <button

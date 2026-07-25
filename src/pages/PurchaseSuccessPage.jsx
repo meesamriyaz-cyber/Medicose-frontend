@@ -7,6 +7,7 @@ import {
   downloadAuthenticatedFile,
   generateInvoiceFilename,
 } from "../utils/downloadUtils";
+import { API_URL } from "../lib/axios";
 import { useCartStore } from "../hooks/useCartStore";
 import { useProductStore } from "../hooks/useProductStore";
 
@@ -29,15 +30,12 @@ const PurchaseSuccessPage = () => {
 
     setDownloading(true);
     try {
-      const apiUrl = import.meta.env.PROD
-        ? "https://haleem-medicose-backend.onrender.com/api"
-        : import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
       const filename = generateInvoiceFilename(orderId);
 
       console.log("Attempting download for order:", orderId);
       await downloadAuthenticatedFile(
-        `${apiUrl}/orders/${orderId}/invoice`,
+        `${API_URL}/orders/${orderId}/invoice`,
         filename
       );
       toast.success("Invoice downloaded successfully!");
