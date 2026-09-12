@@ -4,7 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { LogIn, Mail, Lock, ArrowRight, Loader } from "lucide-react";
 import { useAuthStore } from "../hooks/useAuthStore";
 import { isCustomerMode } from "../config/appMode";
-
+import logo from "../assets/haleemmedicose_logo.png";
 const LoginPage = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -42,8 +42,8 @@ const LoginPage = () => {
       >
         <div className="opacity-95 hover:opacity-100 transition-all duration-300 transform hover:scale-105">
           <img
-            src="/Haleem_Medicose_logo.png"
-            alt="Haleem Medicose"
+            src={logo}
+            alt="Khan Pharmacy"
             className="h-40 w-auto"
             style={{
               filter: "drop-shadow(0 6px 12px rgba(0,0,0,0.3))",

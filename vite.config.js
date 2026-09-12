@@ -10,12 +10,14 @@ export default defineConfig(({ mode }) => {
   const useHttps = env.VITE_USE_HTTPS === "true";
   const isDev = mode === "development";
 
-  return {
-    plugins: [react(), tailwindcss()],
+return {
+     plugins: [react(), tailwindcss()],
 
-    build: {
-      outDir: "dist",
-    },
+     base: "./",
+
+     build: {
+       outDir: "dist",
+     },
 
     server: {
       host: true,

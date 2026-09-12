@@ -1,6 +1,10 @@
 export const detectAppMode = () => {
   if (typeof window === "undefined") return "customer";
 
+  // The Electron desktop build loads its React files from file://. Treat this
+  // as the in-store application, not the public customer website.
+  if (window.location.protocol === "file:") return "local";
+
   const hostname = window.location.hostname;
 
   const isLocalhost =

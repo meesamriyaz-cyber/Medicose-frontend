@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import axios from "axios";
+import api from "../lib/axios";
 import {
   Calendar,
   DollarSign,
@@ -75,7 +75,7 @@ export default function AdminSales() {
         }
       }
 
-      const { data } = await axios.get("/api/sales/report", { params });
+      const { data } = await api.get("/sales/report", { params });
       if (data.success) {
         setReport(data);
       } else {
