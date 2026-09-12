@@ -21,6 +21,13 @@ const getBaseApiUrl = () => {
 
   const hostname = window.location.hostname;
 
+  // Electron packaged (desktop) build loads the app from file://.
+  // There is no "same host" server to derive a URL from in that case —
+  // it must talk to the local backend running on the machine.
+  if (window.location.protocol === "file:") {
+    return "http://localhost:5000/api";
+  }
+
   if (import.meta.env.PROD) {
     if (
       hostname === "haleem-medicose-backend.onrender.com" ||
