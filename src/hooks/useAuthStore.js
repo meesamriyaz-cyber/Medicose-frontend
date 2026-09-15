@@ -19,6 +19,13 @@ const handleStaffBlock = (user) => {
   return false;
 };
 
+const storeAccessToken = (data) => {
+  const token = data?.access_token || data?.accessToken;
+  if (token) {
+    localStorage.setItem("access_token", token);
+  }
+};
+
 export const useAuthStore = create((set, get) => ({
   user: null,
   isAuthenticated: false,
@@ -53,9 +60,7 @@ export const useAuthStore = create((set, get) => ({
         return;
       }
 
-      if (res.data.accessToken) {
-        localStorage.setItem("access_token", res.data.accessToken);
-      }
+      storeAccessToken(res.data);
 
       set({
         isAuthenticated: true,
@@ -92,9 +97,7 @@ export const useAuthStore = create((set, get) => ({
         return;
       }
 
-      if (res.data.accessToken) {
-        localStorage.setItem("access_token", res.data.accessToken);
-      }
+      storeAccessToken(res.data);
 
       set({
         isAuthenticated: true,
@@ -127,10 +130,8 @@ export const useAuthStore = create((set, get) => ({
       // Continue with local logout even if API fails
     }
 
-    // Clear localStorage tokens
     localStorage.removeItem("access_token");
 
-    // Force clear auth state
     set({
       isAuthenticated: false,
       user: null,
@@ -217,9 +218,7 @@ export const useAuthStore = create((set, get) => ({
         withCredentials: true,
       });
 
-      if (res.data?.accessToken) {
-        localStorage.setItem("access_token", res.data.accessToken);
-      }
+      storeAccessToken(res.data);
 
       const existingUser = get().user;
       if (blockedStaffRole(existingUser)) {
@@ -273,10 +272,13 @@ export const useAuthStore = create((set, get) => ({
 // =======================
 
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem("access_token");
+  const isRefreshRequest = config.url?.includes("/auth/refresh-token");
 
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+  if (!isRefreshRequest) {
+    const token = localStorage.getItem("access_token");
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
   }
 
   config.withCredentials = true;
