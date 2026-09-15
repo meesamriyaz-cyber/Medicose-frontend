@@ -60,10 +60,13 @@ export { API_URL, getBaseApiUrl };
 console.log("🌍 MODE:", import.meta.env.MODE);
 console.log("🔗 API:", API_URL);
 
-/** Optional token getter */
+/**
+ * The active auth store uses `access_token` as the client-side fallback token.
+ * Keep the transport key consistent with that store.
+ */
 function getStoredToken() {
   try {
-    return localStorage.getItem("accessToken");
+    return localStorage.getItem("access_token");
   } catch (e) {
     return null;
   }
@@ -83,7 +86,8 @@ const api = axios.create({
 ================================= */
 api.interceptors.request.use(
   (config) => {
-    const token = getStoredToken();
+    const isRefreshRequest = config.url?.includes("/auth/refresh-token");
+    const token = isRefreshRequest ? null : getStoredToken();
 
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
