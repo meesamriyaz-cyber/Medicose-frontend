@@ -33,6 +33,7 @@ const ProductsList = () => {
     category: "",
     stock: "",
     image: "",
+    images: [],
     minStockLevel: "5",
     expiryDate: "",
     batchNumber: "",
@@ -56,7 +57,7 @@ const ProductsList = () => {
     if (product.image) return product.image;
 
     // 3. Absolute safe fallback
-    return "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjMwMCIgdmlld0JveD0iMCAwIDMwMCAzMDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjMwMCIgaGVpZ2h0PSIzMDAiIGZpbGw9IiNlNWU3ZWIiLz48dGV4dCB4PSI1MCUiIHk9IjUwJSIgZG9taW5hbnQtYmFzZWxpbmU9ImNlbnRyYWwiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZvbnQtc2l6ZT0iMTYiIGZpbGw9IiM5Y2EzYWYiPk5vIEltYWdlPC90ZXh0Pjwvc3ZnPg==";
+    return "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjMwMCIgdmlld0JveD0iMCAwIDMwMCAzMDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjMwMCIgaGVpZ2h0PSIzMDAiIGZpbGw9IiNlNWU3ZWIiLz48dGV4dCB4PSI1MCUiIHk9IjUwJSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSIgZm9udC1zaXplPSIxNiIgZmlsbD0iIzkxY2EzYWYiPk5vIEltYWdlPC90ZXh0Pjwvc3ZnPg==";
   };
 
   useEffect(() => {
@@ -80,8 +81,20 @@ const ProductsList = () => {
       category: product.category || "",
       stock: product.stock?.toString() || "0",
       image: product.image || "",
+      images:
+        Array.isArray(product.images) && product.images.length > 0
+          ? product.images.map((image) => ({
+              url: image.url || "",
+              public_id: image.public_id || "",
+              isPrimary: image.isPrimary === true,
+            }))
+          : product.image
+          ? [{ url: product.image, public_id: "", isPrimary: true }]
+          : [],
       minStockLevel: product.minStockLevel?.toString() || "5",
-      expiryDate: product.expiryDate ? new Date(product.expiryDate).toISOString().split("T")[0] : "",
+      expiryDate: product.expiryDate
+        ? new Date(product.expiryDate).toISOString().split("T")[0]
+        : "",
       batchNumber: product.batchNumber || "",
       manufacturer: product.manufacturer || "",
       composition: product.composition || "",
@@ -98,6 +111,7 @@ const ProductsList = () => {
       category: "",
       stock: "",
       image: "",
+      images: [],
       minStockLevel: "5",
       expiryDate: "",
       batchNumber: "",
@@ -109,8 +123,13 @@ const ProductsList = () => {
 
   const handleSaveEdit = async (productId) => {
     try {
+      const primaryImage =
+        editForm.images.find((image) => image.isPrimary) || editForm.images[0];
+
       await updateProduct(productId, {
         ...editForm,
+        image: primaryImage?.data || primaryImage?.url || "",
+        images: editForm.images,
         price: parseFloat(editForm.price),
         stock: parseInt(editForm.stock, 10),
         minStockLevel: parseInt(editForm.minStockLevel, 10) || 5,
@@ -155,53 +174,145 @@ const ProductsList = () => {
   };
 
   const handleImageChange = async (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const isMobile =
-        window.innerWidth <= 768 ||
-        /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
-          navigator.userAgent
-        );
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
 
-      // Mobile: More aggressive compression and smaller size limit
-      if (isMobile) {
+    const isMobileDevice =
+      window.innerWidth <= 768 ||
+      /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+        navigator.userAgent
+      );
+
+    const currentImageCount = editForm.images?.length || 0;
+    const availableSlots = Math.max(0, 5 - currentImageCount);
+
+    if (availableSlots === 0) {
+      toast.error("A product can have a maximum of 5 images.");
+      e.target.value = "";
+      return;
+    }
+
+    const filesToProcess = files.slice(0, availableSlots);
+    if (files.length > availableSlots) {
+      toast.error(`Only ${availableSlots} more image${availableSlots > 1 ? "s" : ""} can be added.`);
+    }
+
+    const processedImages = [];
+
+    for (const file of filesToProcess) {
+      if (!file.type.startsWith("image/")) {
+        toast.error(`"${file.name}" is not a supported image file.`);
+        continue;
+      }
+
+      if (isMobileDevice) {
         if (file.size > 5 * 1024 * 1024) {
-          // 5MB for mobile
           toast.error(
-            "Image is too large for mobile. Please select an image smaller than 5MB."
+            `"${file.name}" is too large for mobile. Please select an image smaller than 5MB.`
           );
-          return;
+          continue;
         }
 
         try {
-          toast.loading("Compressing image for mobile...", {
+          toast.loading(`Processing ${file.name}...`, {
             id: "image-compress",
           });
           const compressedImage = await compressImageForMobile(file, 600, 0.6);
-          setEditForm({ ...editForm, image: compressedImage });
-          toast.success("Image compressed for mobile", {
-            id: "image-compress",
-          });
+          processedImages.push({ data: compressedImage, isPrimary: false });
         } catch (error) {
           console.error("Image compression failed:", error);
-          toast.error("Failed to process image", { id: "image-compress" });
+          toast.error(`Failed to process "${file.name}".`, {
+            id: "image-compress",
+          });
         }
       } else {
-        // Desktop: Original logic
         if (file.size > 2 * 1024 * 1024) {
           toast.error(
-            "Image is too large. Please select an image smaller than 2MB."
+            `"${file.name}" is too large. Please select an image smaller than 2MB.`
           );
-          return;
+          continue;
         }
 
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          setEditForm({ ...editForm, image: reader.result });
-        };
-        reader.readAsDataURL(file);
+        try {
+          const data = await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result);
+            reader.onerror = () => reject(new Error("Failed to read image"));
+            reader.readAsDataURL(file);
+          });
+          processedImages.push({ data, isPrimary: false });
+        } catch (error) {
+          console.error("Image read failed:", error);
+          toast.error(`Failed to read "${file.name}".`);
+        }
       }
     }
+
+    if (processedImages.length > 0) {
+      setEditForm((prev) => {
+        const existingImages = Array.isArray(prev.images) ? prev.images : [];
+        const hasPrimary = existingImages.some((image) => image.isPrimary);
+
+        return {
+          ...prev,
+          images: [
+            ...existingImages,
+            ...processedImages.map((image, index) => ({
+              ...image,
+              isPrimary: !hasPrimary && index === 0,
+            })),
+          ],
+        };
+      });
+
+      toast.success(
+        `${processedImages.length} image${
+          processedImages.length > 1 ? "s" : ""
+        } added.`,
+        { id: "image-compress" }
+      );
+    }
+
+    e.target.value = "";
+  };
+
+  const getEditImageSrc = (image) => image?.data || image?.url || "";
+
+  const handleRemoveEditImage = (index) => {
+    setEditForm((prev) => {
+      const images = Array.isArray(prev.images) ? prev.images : [];
+      if (index < 0 || index >= images.length) return prev;
+
+      const removed = images[index];
+      const remaining = images.filter((_, imageIndex) => imageIndex !== index);
+
+      if (removed?.isPrimary && remaining.length > 0) {
+        remaining[0] = { ...remaining[0], isPrimary: true };
+      }
+
+      const primary = remaining.find((image) => image.isPrimary) || remaining[0];
+
+      return {
+        ...prev,
+        images: remaining,
+        image: primary?.data || primary?.url || "",
+      };
+    });
+  };
+
+  const handleSetPrimaryEditImage = (index) => {
+    setEditForm((prev) => {
+      const images = Array.isArray(prev.images) ? prev.images : [];
+
+      return {
+        ...prev,
+        images: images.map((image, imageIndex) => ({
+          ...image,
+          isPrimary: imageIndex === index,
+        })),
+        image: images[index]?.data || images[index]?.url || "",
+      };
+    });
   };
 
   // Mobile Details Modal
@@ -554,43 +665,96 @@ const ProductsList = () => {
               </label>
             </div>
 
-            {/* Image Upload */}
+            {/* Image Gallery */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Product Image
-                {isMobile && (
-                  <span className="ml-2 text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded">
-                    Mobile Optimized
-                  </span>
+              <div className="flex items-center justify-between mb-2">
+                <label className="block text-sm font-medium text-gray-700">
+                  Product Images
+                  {isMobile && (
+                    <span className="ml-2 text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded">
+                      Mobile Optimized
+                    </span>
+                  )}
+                </label>
+                <span className="text-xs text-gray-500">
+                  {editForm.images?.length || 0} image
+                  {(editForm.images?.length || 0) !== 1 ? "s" : ""}
+                </span>
+              </div>
+
+              <div className="rounded-xl border border-gray-200 bg-gray-50 p-3">
+                {editForm.images?.length > 0 ? (
+                  <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
+                    {editForm.images.map((image, index) => (
+                      <div
+                        key={`${
+                          image.public_id || image.url || image.data || "new"
+                        }-${index}`}
+                        className={`relative rounded-xl border-2 bg-white p-1 ${
+                          image.isPrimary
+                            ? "border-teal-500 ring-2 ring-teal-100"
+                            : "border-gray-200"
+                        }`}
+                      >
+                        <img
+                          src={getEditImageSrc(image)}
+                          alt={`Product image ${index + 1}`}
+                          className="w-full aspect-square rounded-lg object-cover"
+                        />
+
+                        {image.isPrimary && (
+                          <span className="absolute top-2 left-2 inline-flex items-center gap-1 rounded-full bg-teal-600 px-2 py-1 text-[10px] font-semibold text-white shadow">
+                            <Star className="h-3 w-3 fill-current" />
+                            Primary
+                          </span>
+                        )}
+
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveEditImage(index)}
+                          className="absolute top-2 right-2 h-7 w-7 rounded-full bg-red-600 text-white flex items-center justify-center shadow hover:bg-red-700"
+                          title="Remove image"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+
+                        {!image.isPrimary && (
+                          <button
+                            type="button"
+                            onClick={() => handleSetPrimaryEditImage(index)}
+                            className="mt-1 w-full rounded-lg bg-gray-100 px-2 py-1.5 text-[11px] font-medium text-gray-700 hover:bg-gray-200"
+                          >
+                            Set Primary
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-6 text-sm text-gray-500">
+                    No product images available.
+                  </div>
                 )}
-              </label>
-              <div className="flex items-center gap-4">
-                {editForm.image && (
-                  <img
-                    src={editForm.image}
-                    alt="Preview"
-                    className="h-16 w-16 rounded-lg object-cover border border-gray-200"
-                  />
-                )}
-                <div className="flex-1">
+
+                <div className="mt-3">
                   <input
                     type="file"
                     id="edit-image"
                     className="sr-only"
                     accept="image/*"
+                    multiple
                     onChange={handleImageChange}
                   />
                   <label
                     htmlFor="edit-image"
-                    className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 bg-gray-100 border border-gray-300 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-200 transition-all"
+                    className="cursor-pointer w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-100 transition-all"
                   >
                     <Upload className="h-4 w-4" />
-                    {isMobile ? "Change Image (Auto-compress)" : "Change Image"}
+                    Add / Change Images
                   </label>
                   {isMobile && (
-                    <p className="text-xs text-gray-500 mt-1">
-                      Images are automatically compressed for faster mobile
-                      upload
+                    <p className="text-xs text-gray-500 mt-1 text-center">
+                      Images are automatically compressed for faster mobile upload.
                     </p>
                   )}
                 </div>
